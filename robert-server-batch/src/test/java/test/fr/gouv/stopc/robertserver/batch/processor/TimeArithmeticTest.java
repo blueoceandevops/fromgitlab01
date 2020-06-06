@@ -1,5 +1,6 @@
 package test.fr.gouv.stopc.robertserver.batch.processor;
 
+import fr.gouv.stopc.robert.server.common.utils.TimeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 
@@ -10,82 +11,52 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
 public class TimeArithmeticTest {
-    private static int TOLERANCE = 180;
-    private static int USHORT_MAX = 65535;
-
+    private final static int TOLERANCE = 180;
 
     @Test
     void testTSandTRInTheMiddleSucceeds() {
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 10000; i++) {
             Random r = new Random();
-            long ts = r.nextInt(USHORT_MAX - 2 * TOLERANCE) + TOLERANCE;
-            long tr = r.nextInt(2 * TOLERANCE) - TOLERANCE + ts;
+            long ts = r.nextInt(TimeUtils.USHORT_MAX - 2 * TOLERANCE + 1) + TOLERANCE;
+            long tr = r.nextInt(2 * TOLERANCE + 1) - TOLERANCE + ts;
 
-            assertTrue(toleranceCheckWithWrap(ts, tr, TOLERANCE));
+            assertTrue(TimeUtils.toleranceCheckWithWrap(ts, tr, TOLERANCE));
         }
     }
 
     @Test
     void testTSAtBeginningAndTRAtEndSucceeds() {
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 10000; i++) {
             Random r = new Random();
-            long ts = r.nextInt(TOLERANCE);
+            long ts = r.nextInt(TOLERANCE + 1);
             long overflow = TOLERANCE - ts;
-            long tr = USHORT_MAX - r.nextInt((int)overflow);
+            long tr = (TimeUtils.USHORT_MAX - r.nextInt((int)overflow + 1) + 1) % 65536;
 
-            assertTrue(toleranceCheckWithWrap(ts, tr, TOLERANCE));
+            assertTrue(TimeUtils.toleranceCheckWithWrap(ts, tr, TOLERANCE));
+            assertTrue(TimeUtils.toleranceCheckWithWrap(180, 0, TOLERANCE));
         }
     }
 
     @Test
     void testTSAtBeginningAndTRAtEndOrMiddleFails() {
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 10000; i++) {
             Random r = new Random();
-            long ts = r.nextInt(TOLERANCE);
+            long ts = r.nextInt(TOLERANCE + 1);
             long overflow = TOLERANCE - ts;
-            long tr = r.nextInt(USHORT_MAX - (int)overflow + 1 - TOLERANCE + (int)ts) + TOLERANCE + ts;
+            long tr = r.nextInt(TimeUtils.USHORT_MAX + 1 - (int)overflow - (TOLERANCE + (int)ts + 1)) + TOLERANCE + ts + 1;
 
-            assertFalse(toleranceCheckWithWrap(ts, tr, TOLERANCE));
+            assertFalse(TimeUtils.toleranceCheckWithWrap(ts, tr, TOLERANCE));
         }
     }
 
     @Test
     void testTSAtBeginningAndTRInMiddleSucceeds() {
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 10000; i++) {
             Random r = new Random();
-            long ts = r.nextInt(TOLERANCE);
-            long overflow = TOLERANCE - ts;
-            long tr = USHORT_MAX - r.nextInt((int)overflow);
+            long ts = r.nextInt(TOLERANCE + 1);
+            long tr = r.nextInt( TOLERANCE + 1) + (int)ts;
 
-            assertTrue(toleranceCheckWithWrap(ts, tr, TOLERANCE));
+            assertTrue(TimeUtils.toleranceCheckWithWrap(ts, tr, TOLERANCE));
         }
-    }
-
-    private boolean toleranceCheckWithWrap(long ts, long tr, int tolerance) {
-        log.info("Checking ts={} with tr={} and tolerance={}", ts, tr, tolerance);
-
-        // If value is not in min/max zones that may cause overflow
-        if (Math.abs(ts - tr) <= tolerance) {
-            return true;
-        } else {
-            // Overflow risk
-
-            // ts is in min zone, value may overflow to max zone
-            if (ts < TOLERANCE) {
-                // tr is between 0 and ts
-                if (tr < ts) {
-                    return true;
-                }
-                else {
-                    
-                    if (tr > USHORT_MAX - (tolerance - ts)) {
-                        return true;
-                    } else {
-                        return false;
-                    }
-                }
-            }
-        }
-        return false;
     }
 }

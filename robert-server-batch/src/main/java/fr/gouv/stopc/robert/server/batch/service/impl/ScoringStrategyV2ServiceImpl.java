@@ -81,7 +81,7 @@ public class ScoringStrategyV2ServiceImpl implements ScoringStrategyService {
 		return (1 - Math.exp(-this.propertyLoader.getR0ScoringAlgorithm() * scoreSum));
 	}
 
-	/**
+	/**c
 	 * {@inheritDoc}
 	 */
 	@Override
