@@ -147,7 +147,7 @@ public class ContactProcessor implements ItemProcessor<Contact, Contact> {
         for (EpochExposition epochExposition : scoresSinceLastNotif) {
             double finalRiskForEpoch = this.scoringStrategy.aggregate(epochExposition.getExpositionScores());
             if (finalRiskForEpoch > this.propertyLoader.getRiskThreshold()) {
-                log.info("Scored aggregate risk for epoch {}: {}", epochExposition.getEpochId(), finalRiskForEpoch);
+                log.info("Risk detected. Scored aggregate risk for epoch {}: {}", epochExposition.getEpochId(), finalRiskForEpoch);
                 numberOfAtRiskExposedEpochs++;
                 break;
             }
@@ -170,16 +170,18 @@ public class ContactProcessor implements ItemProcessor<Contact, Contact> {
         final long timeFromDeviceAs16bits = castLong(helloMessageDetail.getTimeCollectedOnDevice(), 2);
         final int timeDiffTolerance = this.serverConfigurationService.getHelloMessageTimeStampTolerance();
 
-        // TODO: fix this as overflow of 16bits may cause rejection of valid messages
-        if (Math.abs(timeFromHelloNTPsecAs16bits - timeFromDeviceAs16bits) > timeDiffTolerance) {
-            log.warn("Time tolerance was exceeded: |{} (HELLO) vs {} (receiving device)| > {}; discarding HELLO message",
-                    timeFromHelloNTPsecAs16bits,
-                    timeFromDeviceAs16bits,
-                    timeDiffTolerance);
-            return false;
+        if (TimeUtils.toleranceCheckWithWrap(timeFromHelloNTPsecAs16bits, timeFromDeviceAs16bits, timeDiffTolerance)) {
+            return true;
         }
-        return true;
+
+        log.warn("Time tolerance was exceeded: |{} (HELLO) vs {} (receiving device)| > {}; discarding HELLO message",
+                timeFromHelloNTPsecAs16bits,
+                timeFromDeviceAs16bits,
+                timeDiffTolerance);
+        return false;
     }
+
+
 
     /**
      *  Robert Spec Step #6

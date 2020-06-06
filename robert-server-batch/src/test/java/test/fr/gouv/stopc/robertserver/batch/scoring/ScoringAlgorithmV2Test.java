@@ -104,7 +104,9 @@ public class ScoringAlgorithmV2Test {
         expectedOutput.add(ScoringResult.builder().rssiScore(1.0).duration(8).nbContacts(9).build());
 
         for (ScoringResult scoringResult : expectedOutput) {
-            scoringResult.setRssiScore(scoringResult.getRssiScore() * scoringResult.getDuration());
+            double rssiScore= scoringResult.getRssiScore() * scoringResult.getDuration();
+            log.info("rssi score: {}", rssiScore);
+            scoringResult.setRssiScore(rssiScore);
         }
 
         launchTestsOnDirectoryAndExpectOutput(directory, expectedOutput, 0.43701722115091);
@@ -233,7 +235,7 @@ public class ScoringAlgorithmV2Test {
             }).collect(Collectors.toList());
 
             for (int i = 0; i < risks.size(); i++) {
-                if (risks.get(i) != expectedOutput.get(i)) {
+                if (risks.get(i).equals(expectedOutput.get(i))) {
                     log.error("Values differ; expected={}; found={}", expectedOutput.get(i), risks.get(i));
                 }
             }
