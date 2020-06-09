@@ -737,6 +737,13 @@ class CryptoServiceGrpcServerTest {
                 0L,
                 OtherKSEnum.PREVIOUS);
 
+        if (bundle.getEpochId() >= CryptoGrpcServiceBaseImpl.MAX_EPOCH_DOUBLE_KS_CHECK) {
+            log.warn("Outside of K_S patch period ({}); current epoch: {}",
+                    CryptoGrpcServiceBaseImpl.MAX_EPOCH_DOUBLE_KS_CHECK,
+                    bundle.getEpochId());
+            return;
+        }
+
         // Given
         GetIdFromAuthRequest request = GetIdFromAuthRequest
                 .newBuilder()
@@ -1019,6 +1026,13 @@ class CryptoServiceGrpcServerTest {
                 0L,
                 OtherKSEnum.PREVIOUS);
 
+        if (bundle.getEpochId() >= CryptoGrpcServiceBaseImpl.MAX_EPOCH_DOUBLE_KS_CHECK) {
+            log.warn("Outside of K_S patch period ({}); current epoch: {}",
+                    CryptoGrpcServiceBaseImpl.MAX_EPOCH_DOUBLE_KS_CHECK,
+                    bundle.getEpochId());
+            return;
+        }
+
         // Given
         DeleteIdRequest request = DeleteIdRequest
                 .newBuilder()
@@ -1288,6 +1302,13 @@ class CryptoServiceGrpcServerTest {
                 0L,
                 OtherKSEnum.PREVIOUS);
 
+        if (bundle.getEpochId() >= CryptoGrpcServiceBaseImpl.MAX_EPOCH_DOUBLE_KS_CHECK) {
+            log.warn("Outside of K_S patch period ({}); current epoch: {}",
+                    CryptoGrpcServiceBaseImpl.MAX_EPOCH_DOUBLE_KS_CHECK,
+                    bundle.getEpochId());
+            return;
+        }
+
         byte[][] serverKeys = generateRandomServerKeys();
 
         when(this.cryptographicStorageService.getServerKeys(this.currentEpochId,
@@ -1398,7 +1419,7 @@ class CryptoServiceGrpcServerTest {
                         this.serverConfigurationService.getServiceTimeStart(),
                         false);
         doReturn(ksPrevious).when(this.cryptographicStorageService)
-                .getServerKey(epochId -1,
+                .getServerKey(epochId - 1,
                         this.serverConfigurationService.getServiceTimeStart(),
                         false);
         doReturn(ksPrevious).when(this.cryptographicStorageService)
@@ -1419,13 +1440,10 @@ class CryptoServiceGrpcServerTest {
                 serverKey = ks;
                 break;
         }
+
         byte[] ebid = generateEbid(id, epochId, serverKey);
 
-        //when(this.cryptographicStorageService.getServerKeys(epochId, time, 4)).thenReturn(serverKeys);
-//        when(this.cryptographicStorageService.getServerKey(epochId, time, false)).thenReturn(serverKeys[2]);
-//        when(this.cryptographicStorageService.getServerKey(epochId, time, true)).thenReturn(serverKeys[1]);
         when(this.cryptographicStorageService.getFederationKey()).thenReturn(this.federationKey);
-
 
         byte[] mac;
         byte[] ecc;
@@ -1577,6 +1595,8 @@ class CryptoServiceGrpcServerTest {
         new SecureRandom().nextBytes(serverKeys[2]);
         new SecureRandom().nextBytes(serverKeys[3]);
 
+        int delta = 5000;
+
         Optional<ClientIdentifierBundle> clientIdentifierBundle = createId();
         HelloMessageBundle bundle = generateHelloMessage(
                 clientIdentifierBundle.get().getId(),
@@ -1585,6 +1605,20 @@ class CryptoServiceGrpcServerTest {
                 DigestSaltEnum.HELLO,
                 5000,
                 OtherKSEnum.PREVIOUS);
+
+        final LocalDateTime ldt = LocalDateTime.of(2020, 6, 1, 00, 00);
+        final ZonedDateTime zdt = ldt.atZone(ZoneId.of("UTC"));
+        long otherTimeStart = TimeUtils.convertUnixMillistoNtpSeconds(zdt.toInstant().toEpochMilli());
+
+        long time = getCurrentTimeNTPSeconds() - delta;
+        int epochId = TimeUtils.getNumberOfEpochsBetween(otherTimeStart, time);
+
+        if (epochId >= CryptoGrpcServiceBaseImpl.MAX_EPOCH_DOUBLE_KS_CHECK) {
+            log.warn("Outside of K_S patch period ({}); current epoch: {}",
+                    CryptoGrpcServiceBaseImpl.MAX_EPOCH_DOUBLE_KS_CHECK,
+                    epochId);
+            return;
+        }
 
         // Given
         GetInfoFromHelloMessageRequest request = GetInfoFromHelloMessageRequest
