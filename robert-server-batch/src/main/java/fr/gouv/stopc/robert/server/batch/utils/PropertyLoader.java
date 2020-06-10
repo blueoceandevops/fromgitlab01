@@ -24,4 +24,7 @@ public class PropertyLoader {
 	@Value("${robert.scoring.scoring-algo-r0}")
 	private Double r0ScoringAlgorithm;
 
+	@Value("${robert.scoring.batch-mode}")
+	private String batchMode;
+
 }

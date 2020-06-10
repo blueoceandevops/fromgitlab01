@@ -33,4 +33,7 @@ public class ScoringAlgorithmConfiguration {
 	// Constant for risk averaging
 	private double softMaxB;
 
+	// Tolerance for timestamp that may exceed the epoch duration
+	private int epochTolerance;
+
 }
