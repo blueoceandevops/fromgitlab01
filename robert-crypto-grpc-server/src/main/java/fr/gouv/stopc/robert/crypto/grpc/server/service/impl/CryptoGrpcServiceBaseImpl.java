@@ -408,7 +408,7 @@ public class CryptoGrpcServiceBaseImpl extends CryptoGrpcServiceImplImplBase {
     }
 
 
-    public final static int MAX_EPOCH_DOUBLE_KS_CHECK = 672;
+    private final static int MAX_EPOCH_DOUBLE_KS_CHECK = 672;
     private boolean isEBIDWithinRange(int epoch) {
         return epoch >= 0 && epoch <= MAX_EPOCH_DOUBLE_KS_CHECK;
     }

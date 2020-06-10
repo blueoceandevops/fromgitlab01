@@ -73,6 +73,8 @@ class CryptoServiceGrpcServerTest {
     private final static byte[] SERVER_COUNTRY_CODE = new byte[] { (byte) 0x21 };
     private final static int NUMBER_OF_DAYS_FOR_BUNDLES = 4;
 
+    private final static int MAX_EPOCH_DOUBLE_KS_CHECK = 672;
+
     final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
 
     private ManagedChannel inProcessChannel;
@@ -737,9 +739,9 @@ class CryptoServiceGrpcServerTest {
                 0L,
                 OtherKSEnum.PREVIOUS);
 
-        if (bundle.getEpochId() >= CryptoGrpcServiceBaseImpl.MAX_EPOCH_DOUBLE_KS_CHECK) {
+        if (bundle.getEpochId() >= MAX_EPOCH_DOUBLE_KS_CHECK) {
             log.warn("Outside of K_S patch period ({}); current epoch: {}",
-                    CryptoGrpcServiceBaseImpl.MAX_EPOCH_DOUBLE_KS_CHECK,
+                    MAX_EPOCH_DOUBLE_KS_CHECK,
                     bundle.getEpochId());
             return;
         }
@@ -1026,9 +1028,9 @@ class CryptoServiceGrpcServerTest {
                 0L,
                 OtherKSEnum.PREVIOUS);
 
-        if (bundle.getEpochId() >= CryptoGrpcServiceBaseImpl.MAX_EPOCH_DOUBLE_KS_CHECK) {
+        if (bundle.getEpochId() >= MAX_EPOCH_DOUBLE_KS_CHECK) {
             log.warn("Outside of K_S patch period ({}); current epoch: {}",
-                    CryptoGrpcServiceBaseImpl.MAX_EPOCH_DOUBLE_KS_CHECK,
+                    MAX_EPOCH_DOUBLE_KS_CHECK,
                     bundle.getEpochId());
             return;
         }
@@ -1302,9 +1304,9 @@ class CryptoServiceGrpcServerTest {
                 0L,
                 OtherKSEnum.PREVIOUS);
 
-        if (bundle.getEpochId() >= CryptoGrpcServiceBaseImpl.MAX_EPOCH_DOUBLE_KS_CHECK) {
+        if (bundle.getEpochId() >= MAX_EPOCH_DOUBLE_KS_CHECK) {
             log.warn("Outside of K_S patch period ({}); current epoch: {}",
-                    CryptoGrpcServiceBaseImpl.MAX_EPOCH_DOUBLE_KS_CHECK,
+                    MAX_EPOCH_DOUBLE_KS_CHECK,
                     bundle.getEpochId());
             return;
         }
@@ -1613,9 +1615,9 @@ class CryptoServiceGrpcServerTest {
         long time = getCurrentTimeNTPSeconds() - delta;
         int epochId = TimeUtils.getNumberOfEpochsBetween(otherTimeStart, time);
 
-        if (epochId >= CryptoGrpcServiceBaseImpl.MAX_EPOCH_DOUBLE_KS_CHECK) {
+        if (epochId >= MAX_EPOCH_DOUBLE_KS_CHECK) {
             log.warn("Outside of K_S patch period ({}); current epoch: {}",
-                    CryptoGrpcServiceBaseImpl.MAX_EPOCH_DOUBLE_KS_CHECK,
+                    MAX_EPOCH_DOUBLE_KS_CHECK,
                     epochId);
             return;
         }
