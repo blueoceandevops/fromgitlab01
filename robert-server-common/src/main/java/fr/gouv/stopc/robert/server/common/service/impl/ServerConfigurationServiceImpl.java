@@ -1,73 +1,58 @@
 package fr.gouv.stopc.robert.server.common.service.impl;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 
+import javax.annotation.PostConstruct;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import fr.gouv.stopc.robert.server.common.service.IServerConfigurationService;
 import fr.gouv.stopc.robert.server.common.utils.TimeUtils;
 
 /**
- * Issue #TODO: this class must not use hardcoded values
- * Facade for server configuration parameters and keys
+ * Default implementation of the IServerConfigurationService
  */
 @Service
 public class ServerConfigurationServiceImpl implements IServerConfigurationService {
 
-    @Override
-    public long getServiceTimeStart() {
-        final LocalDateTime ldt = LocalDateTime.of(2020, 6, 1, 00, 00);
-        final ZonedDateTime zdt = ldt.atZone(ZoneId.of("UTC"));
-        return TimeUtils.convertUnixMillistoNtpSeconds(zdt.toInstant().toEpochMilli());
-    }
+    @Value("${robert.server.time-start:20200601}")
+    private String timeStart;
 
-    @Override
-    public byte getServerCountryCode() {
-        return (byte) 0x21;
-    }
+    @Value("${robert.server.country-code:0x21}")
+    private byte countryCode;
 
-    @Override
-    public int getHelloMessageTimeStampTolerance() {
-        return 180;
-    }
+	private Long timeStartNtp;
 
-    @Override
-    public int getContagiousPeriod() {
-        return 14;
-    }
+	/**
+	 * Initializes the timeStartNtp field
+	 */
+	@PostConstruct
+	private void initTimeStartNtp() {
+		LocalDate ld = LocalDate.parse(this.timeStart, DateTimeFormatter.BASIC_ISO_DATE);
+		timeStartNtp = TimeUtils.convertUnixStoNtpSeconds(ld.atStartOfDay().toEpochSecond(ZoneOffset.UTC));
+	}
 
-    @Override
-    public int getEpochDurationSecs() {
-        return TimeUtils.EPOCH_DURATION_SECS;
-    }
+	@Override
+	public long getServiceTimeStart() {
+		return this.timeStartNtp;
+	}
 
-    @Override
-    public int getEpochBundleDurationInDays() {
-        // number of seconds in a day / duration of an epoch in seconds * number of days for which to generates bundle
-        // (to be configurable)
-        return 4;
-    }
+	@Override
+	public byte getServerCountryCode() {
+		return this.countryCode;
+	}
 
-    @Override
-    public int getRequestTimeDeltaTolerance() {
-        return 60;
-    }
+	@Override
+	public int getEpochDurationSecs() {
+		return TimeUtils.EPOCH_DURATION_SECS;
+	}
 
-    @Override
-    public int getStatusRequestMinimumEpochGap() {
-        return 2;
-    }
+	@Override
+	public int getEpochBundleDurationInDays() {
+		return 4;
+	}
 
-    @Override
-    public int getCaptchaChallengeTimestampTolerance() {
-        return 60;
-    }
-
-    // Issue #TODO: store all values of this risk threshold to track any configuration change over time
-    @Override
-    public double getRiskThreshold() {
-        return 15.0;
-    }
 }

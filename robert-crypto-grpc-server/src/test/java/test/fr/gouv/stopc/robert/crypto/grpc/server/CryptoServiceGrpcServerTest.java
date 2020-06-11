@@ -1,69 +1,82 @@
 package test.fr.gouv.stopc.robert.crypto.grpc.server;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.when;
+
 import java.io.IOException;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import fr.gouv.stopc.robert.crypto.grpc.server.messaging.*;
-import fr.gouv.stopc.robert.crypto.grpc.server.storage.cryptographic.service.ICryptographicStorageService;
-import fr.gouv.stopc.robert.crypto.grpc.server.storage.model.ClientIdentifierBundle;
-import fr.gouv.stopc.robert.server.common.DigestSaltEnum;
-import fr.gouv.stopc.robert.server.common.utils.TimeUtils;
-import fr.gouv.stopc.robert.server.crypto.exception.RobertServerCryptoException;
-import fr.gouv.stopc.robert.server.crypto.structure.CryptoAES;
-import fr.gouv.stopc.robert.server.crypto.structure.impl.CryptoAESECB;
-import fr.gouv.stopc.robert.server.crypto.structure.impl.CryptoAESGCM;
-import fr.gouv.stopc.robert.server.crypto.structure.impl.CryptoHMACSHA256;
-import fr.gouv.stopc.robert.server.crypto.structure.impl.CryptoSkinny64;
-import lombok.*;
-import lombok.extern.slf4j.Slf4j;
+import javax.crypto.KeyGenerator;
+import javax.crypto.spec.SecretKeySpec;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.ByteString;
 
 import fr.gouv.stopc.robert.crypto.grpc.server.CryptoServiceGrpcServer;
+import fr.gouv.stopc.robert.crypto.grpc.server.messaging.*;
 import fr.gouv.stopc.robert.crypto.grpc.server.messaging.CryptoGrpcServiceImplGrpc.CryptoGrpcServiceImplImplBase;
 import fr.gouv.stopc.robert.crypto.grpc.server.messaging.CryptoGrpcServiceImplGrpc.CryptoGrpcServiceImplStub;
-
-import fr.gouv.stopc.robert.crypto.grpc.server.storage.service.IClientKeyStorageService;
 import fr.gouv.stopc.robert.crypto.grpc.server.service.ICryptoServerConfigurationService;
 import fr.gouv.stopc.robert.crypto.grpc.server.service.impl.CryptoGrpcServiceBaseImpl;
-import fr.gouv.stopc.robert.crypto.grpc.server.service.impl.CryptoServerConfigurationServiceImpl;
 import fr.gouv.stopc.robert.crypto.grpc.server.service.impl.ECDHKeyServiceImpl;
+import fr.gouv.stopc.robert.crypto.grpc.server.storage.cryptographic.service.ICryptographicStorageService;
+import fr.gouv.stopc.robert.crypto.grpc.server.storage.model.ClientIdentifierBundle;
+import fr.gouv.stopc.robert.crypto.grpc.server.storage.service.IClientKeyStorageService;
+import fr.gouv.stopc.robert.crypto.grpc.server.utils.PropertyLoader;
+import fr.gouv.stopc.robert.server.common.DigestSaltEnum;
 import fr.gouv.stopc.robert.server.common.utils.ByteUtils;
+import fr.gouv.stopc.robert.server.common.utils.TimeUtils;
+import fr.gouv.stopc.robert.server.crypto.exception.RobertServerCryptoException;
 import fr.gouv.stopc.robert.server.crypto.service.CryptoService;
 import fr.gouv.stopc.robert.server.crypto.service.impl.CryptoServiceImpl;
+import fr.gouv.stopc.robert.server.crypto.structure.CryptoAES;
+import fr.gouv.stopc.robert.server.crypto.structure.impl.CryptoAESECB;
+import fr.gouv.stopc.robert.server.crypto.structure.impl.CryptoAESGCM;
+import fr.gouv.stopc.robert.server.crypto.structure.impl.CryptoHMACSHA256;
+import fr.gouv.stopc.robert.server.crypto.structure.impl.CryptoSkinny64;
 import io.grpc.ManagedChannel;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
 import io.grpc.testing.GrpcCleanupRule;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import test.fr.gouv.stopc.robert.crypto.grpc.server.utils.CryptoTestUtils;
-
-import javax.crypto.KeyGenerator;
-import javax.crypto.spec.SecretKeySpec;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 @Slf4j
 @ExtendWith(SpringExtension.class)
@@ -72,6 +85,8 @@ class CryptoServiceGrpcServerTest {
     private final static String UNEXPECTED_FAILURE_MESSAGE = "Should not fail";
     private final static byte[] SERVER_COUNTRY_CODE = new byte[] { (byte) 0x21 };
     private final static int NUMBER_OF_DAYS_FOR_BUNDLES = 4;
+
+    private final static int MAX_EPOCH_DOUBLE_KS_CHECK = 672;
 
     final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
 
@@ -93,6 +108,9 @@ class CryptoServiceGrpcServerTest {
     @Mock
     private ICryptographicStorageService cryptographicStorageService;
 
+    @Mock
+    private PropertyLoader propertyLoader;
+
     private int currentEpochId;
 
     private Key federationKey;
@@ -100,7 +118,15 @@ class CryptoServiceGrpcServerTest {
     @BeforeEach
     void beforeEach() throws IOException {
 
-        serverConfigurationService = new CryptoServerConfigurationServiceImpl();
+        serverConfigurationService = new ICryptoServerConfigurationService() {
+           long timeStartNtp = TimeUtils.convertUnixStoNtpSeconds(LocalDate.of(2020, 6, 1).atStartOfDay().toEpochSecond(ZoneOffset.UTC));
+
+           @Override
+            public long getServiceTimeStart() {
+                return timeStartNtp;
+            }
+
+        };
 
         cryptoService = new CryptoServiceImpl();
 
@@ -110,10 +136,14 @@ class CryptoServiceGrpcServerTest {
                 cryptoService,
                 keyService,
                 clientStorageService,
-                cryptographicStorageService);
+                cryptographicStorageService,
+                propertyLoader);
 
         when(this.cryptographicStorageService.getServerKeyPair())
-                .thenReturn(Optional.ofNullable(CryptoTestUtils.generateECDHKeyPair()));
+        .thenReturn(Optional.ofNullable(CryptoTestUtils.generateECDHKeyPair()));
+
+        when(this.propertyLoader.getHelloMessageTimeStampTolerance())
+        .thenReturn(180);
 
         byte[] keyToEncodeKeys = new byte[32];
         new SecureRandom().nextBytes(keyToEncodeKeys);
@@ -380,10 +410,11 @@ class CryptoServiceGrpcServerTest {
     }
 
     private AuthRequestBundle generateAuthRequestBundleWithTimeDeltaAndOtherKS(byte[] id,
-                                                                               byte[] keyForMac,
-                                                                               DigestSaltEnum digestSalt,
-                                                                               long timeDelta,
-                                                                               OtherKSEnum otherKs) {
+            byte[] keyForMac,
+            DigestSaltEnum digestSalt,
+            long timeDelta,
+            OtherKSEnum otherKs) {
+
         long time = getCurrentTimeNTPSeconds();
         int epochId = TimeUtils.getNumberOfEpochsBetween(
                 this.serverConfigurationService.getServiceTimeStart(),
@@ -392,6 +423,7 @@ class CryptoServiceGrpcServerTest {
         // Mock K_S
         byte[] ks = new byte[24];
         new SecureRandom().nextBytes(ks);
+
         byte[] ksPrevious = new byte[24];
         new SecureRandom().nextBytes(ksPrevious);
         byte[] ksNext = new byte[24];
@@ -737,6 +769,13 @@ class CryptoServiceGrpcServerTest {
                 0L,
                 OtherKSEnum.PREVIOUS);
 
+        if (bundle.getEpochId() >= MAX_EPOCH_DOUBLE_KS_CHECK) {
+            log.warn("Outside of K_S patch period ({}); current epoch: {}",
+                    MAX_EPOCH_DOUBLE_KS_CHECK,
+                    bundle.getEpochId());
+            return;
+        }
+
         // Given
         GetIdFromAuthRequest request = GetIdFromAuthRequest
                 .newBuilder()
@@ -1019,6 +1058,13 @@ class CryptoServiceGrpcServerTest {
                 0L,
                 OtherKSEnum.PREVIOUS);
 
+        if (bundle.getEpochId() >= MAX_EPOCH_DOUBLE_KS_CHECK) {
+            log.warn("Outside of K_S patch period ({}); current epoch: {}",
+                    MAX_EPOCH_DOUBLE_KS_CHECK,
+                    bundle.getEpochId());
+            return;
+        }
+
         // Given
         DeleteIdRequest request = DeleteIdRequest
                 .newBuilder()
@@ -1110,12 +1156,12 @@ class CryptoServiceGrpcServerTest {
     }
 
     private byte[][] generateRandomServerKeys() {
-         byte[][] serverKeys = new byte[4][24];
-         new SecureRandom().nextBytes(serverKeys[0]);
+        byte[][] serverKeys = new byte[4][24];
+        new SecureRandom().nextBytes(serverKeys[0]);
         new SecureRandom().nextBytes(serverKeys[1]);
         new SecureRandom().nextBytes(serverKeys[2]);
         new SecureRandom().nextBytes(serverKeys[3]);
-         return serverKeys;
+        return serverKeys;
     }
 
     @Test
@@ -1288,6 +1334,13 @@ class CryptoServiceGrpcServerTest {
                 0L,
                 OtherKSEnum.PREVIOUS);
 
+        if (bundle.getEpochId() >= MAX_EPOCH_DOUBLE_KS_CHECK) {
+            log.warn("Outside of K_S patch period ({}); current epoch: {}",
+                    MAX_EPOCH_DOUBLE_KS_CHECK,
+                    bundle.getEpochId());
+            return;
+        }
+
         byte[][] serverKeys = generateRandomServerKeys();
 
         when(this.cryptographicStorageService.getServerKeys(this.currentEpochId,
@@ -1419,6 +1472,7 @@ class CryptoServiceGrpcServerTest {
                 serverKey = ks;
                 break;
         }
+
         byte[] ebid = generateEbid(id, epochId, serverKey);
 
         //when(this.cryptographicStorageService.getServerKeys(epochId, time, 4)).thenReturn(serverKeys);
@@ -1577,14 +1631,30 @@ class CryptoServiceGrpcServerTest {
         new SecureRandom().nextBytes(serverKeys[2]);
         new SecureRandom().nextBytes(serverKeys[3]);
 
+        int delta = 5000;
         Optional<ClientIdentifierBundle> clientIdentifierBundle = createId();
         HelloMessageBundle bundle = generateHelloMessage(
                 clientIdentifierBundle.get().getId(),
                 serverKeys,
                 clientIdentifierBundle.get().getKeyForMac(),
                 DigestSaltEnum.HELLO,
-                5000,
+                delta,
                 OtherKSEnum.PREVIOUS);
+    
+        final LocalDateTime ldt = LocalDateTime.of(2020, 6, 1, 00, 00);
+        final ZonedDateTime zdt = ldt.atZone(ZoneId.of("UTC"));
+        long otherTimeStart = TimeUtils.convertUnixMillistoNtpSeconds(zdt.toInstant().toEpochMilli());
+
+        long time = getCurrentTimeNTPSeconds() - delta;
+        int epochId = TimeUtils.getNumberOfEpochsBetween(otherTimeStart, time);
+
+        if (epochId >= MAX_EPOCH_DOUBLE_KS_CHECK) {
+            log.warn("Outside of K_S patch period ({}); current epoch: {}",
+                    MAX_EPOCH_DOUBLE_KS_CHECK,
+                    epochId);
+            return;
+        }
+
 
         // Given
         GetInfoFromHelloMessageRequest request = GetInfoFromHelloMessageRequest
@@ -1674,22 +1744,22 @@ class CryptoServiceGrpcServerTest {
 
             StreamObserver<U> responseObserver =
                     new StreamObserver<U>() {
-                        @Override
-                        public void onNext(U value) {
-                            response.add(value);
-                        }
+                @Override
+                public void onNext(U value) {
+                    response.add(value);
+                }
 
-                        @Override
-                        public void onError(Throwable t) {
-                            handleError.execute(t);
-                            res.setError(true);
-                        }
+                @Override
+                public void onError(Throwable t) {
+                    handleError.execute(t);
+                    res.setError(true);
+                }
 
-                        @Override
-                        public void onCompleted() {
-                            latch.countDown();
-                        }
-                    };
+                @Override
+                public void onCompleted() {
+                    latch.countDown();
+                }
+            };
 
             stubExecution.execute(stub, request, responseObserver);
             // When
@@ -1712,92 +1782,92 @@ class CryptoServiceGrpcServerTest {
 
     public class MockClientKeyStorageService implements IClientKeyStorageService {
 
-    private final HashMap<ByteArray, ClientIdentifierBundle> idKeyHashMap = new HashMap<>();
+        private final HashMap<ByteArray, ClientIdentifierBundle> idKeyHashMap = new HashMap<>();
 
-    private final static int MAX_ID_CREATION_ATTEMPTS = 10;
+        private final static int MAX_ID_CREATION_ATTEMPTS = 10;
 
-    private byte[] generateRandomIdentifier() {
-        byte[] id;
-        int i = 0;
-        do {
-            id = generateKey(5);
-            i++;
-        } while (this.idKeyHashMap.containsKey(id) && i < MAX_ID_CREATION_ATTEMPTS);
-        return i == MAX_ID_CREATION_ATTEMPTS ? null : id;
-    }
-
-    public byte [] generateRandomKey() {
-        byte [] ka = null;
-
-        try {
-            KeyGenerator keyGen = KeyGenerator.getInstance("HmacSHA256");
-
-            //Creating a SecureRandom object
-            SecureRandom secRandom = new SecureRandom();
-
-            //Initializing the KeyGenerator
-            keyGen.init(secRandom);
-
-            //Creating/Generating a key
-            Key key = keyGen.generateKey();
-            ka = key.getEncoded();
-        } catch (NoSuchAlgorithmException e) {
-            log.error("Could not generate 256-bit key");
-        }
-        return ka;
-    }
-
-    private byte[] generateKey(final int nbOfbytes) {
-        byte[] rndBytes = new byte[nbOfbytes];
-        SecureRandom sr = new SecureRandom();
-        sr.nextBytes(rndBytes);
-        return rndBytes;
-    }
-
-    @Override
-    public Optional<ClientIdentifierBundle> createClientIdUsingKeys(byte[] kaMac, byte[] kaTuples) {
-        byte[] id = generateRandomIdentifier();
-
-        ClientIdentifierBundle clientBundle = ClientIdentifierBundle.builder()
-                .id(id)
-                .keyForMac(kaMac)
-                .keyForTuples(kaTuples)
-                .build();
-        this.idKeyHashMap.put(new ByteArray(id), clientBundle);
-        return Optional.of(clientBundle);
-    }
-
-    @Override
-    public Optional<ClientIdentifierBundle> findKeyById(byte[] id) {
-        ClientIdentifierBundle bundle = this.idKeyHashMap.get(new ByteArray(id));
-        if (Objects.isNull(bundle)) {
-            return Optional.empty();
+        private byte[] generateRandomIdentifier() {
+            byte[] id;
+            int i = 0;
+            do {
+                id = generateKey(5);
+                i++;
+            } while (this.idKeyHashMap.containsKey(id) && i < MAX_ID_CREATION_ATTEMPTS);
+            return i == MAX_ID_CREATION_ATTEMPTS ? null : id;
         }
 
-        return Optional.of(bundle);
-    }
+        public byte [] generateRandomKey() {
+            byte [] ka = null;
 
-    @Override
-    public void deleteClientId(byte[] id) {
-        this.idKeyHashMap.remove(new ByteArray(id));
-    }
+            try {
+                KeyGenerator keyGen = KeyGenerator.getInstance("HmacSHA256");
 
-    private class ByteArray {
-        public final byte[] bytes;
-        public ByteArray(byte[] bytes) {
-            this.bytes = bytes;
+                //Creating a SecureRandom object
+                SecureRandom secRandom = new SecureRandom();
+
+                //Initializing the KeyGenerator
+                keyGen.init(secRandom);
+
+                //Creating/Generating a key
+                Key key = keyGen.generateKey();
+                ka = key.getEncoded();
+            } catch (NoSuchAlgorithmException e) {
+                log.error("Could not generate 256-bit key");
+            }
+            return ka;
         }
+
+        private byte[] generateKey(final int nbOfbytes) {
+            byte[] rndBytes = new byte[nbOfbytes];
+            SecureRandom sr = new SecureRandom();
+            sr.nextBytes(rndBytes);
+            return rndBytes;
+        }
+
         @Override
-        public boolean equals(Object rhs) {
-            return rhs != null && rhs instanceof ByteArray
-                    && Arrays.equals(bytes, ((ByteArray)rhs).bytes);
+        public Optional<ClientIdentifierBundle> createClientIdUsingKeys(byte[] kaMac, byte[] kaTuples) {
+            byte[] id = generateRandomIdentifier();
+
+            ClientIdentifierBundle clientBundle = ClientIdentifierBundle.builder()
+                    .id(id)
+                    .keyForMac(kaMac)
+                    .keyForTuples(kaTuples)
+                    .build();
+            this.idKeyHashMap.put(new ByteArray(id), clientBundle);
+            return Optional.of(clientBundle);
         }
+
         @Override
-        public int hashCode() {
-            return Arrays.hashCode(bytes);
+        public Optional<ClientIdentifierBundle> findKeyById(byte[] id) {
+            ClientIdentifierBundle bundle = this.idKeyHashMap.get(new ByteArray(id));
+            if (Objects.isNull(bundle)) {
+                return Optional.empty();
+            }
+
+            return Optional.of(bundle);
+        }
+
+        @Override
+        public void deleteClientId(byte[] id) {
+            this.idKeyHashMap.remove(new ByteArray(id));
+        }
+
+        private class ByteArray {
+            public final byte[] bytes;
+            public ByteArray(byte[] bytes) {
+                this.bytes = bytes;
+            }
+            @Override
+            public boolean equals(Object rhs) {
+                return rhs != null && rhs instanceof ByteArray
+                        && Arrays.equals(bytes, ((ByteArray)rhs).bytes);
+            }
+            @Override
+            public int hashCode() {
+                return Arrays.hashCode(bytes);
+            }
         }
     }
-}
 
 
 }
