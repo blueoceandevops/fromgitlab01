@@ -1,0 +1,19 @@
+{
+	"properties": [
+		{
+			"name": "robert.admin.authorized-roles",
+			"type": "java.lang.List",
+			"description": "Roles allowed to query the configuration server. List of strings separated by comma"
+		},
+		{
+			"name": "robert.admin.rs-config-prefix",
+			"type": "java.lang.String",
+			"description": "Robert Server configuration key prefix"
+		},
+		{
+			"name": "robert.admin.rb-config-prefix",
+			"type": "java.lang.String",
+			"description": "Robert Batch configuration key prefix"
+		}
+	]
+}

@@ -1,0 +1,28 @@
+# Web server configuration
+server:
+  port: ${ROBERT_ADMIN_PORT:8888}
+
+# Application name used by consul
+spring:
+  application:
+    name: robert-admin
+
+# Robert admin configuration
+robert:
+  admin:
+    authorized-roles: ${ROBERT_ADMIN_AUTHORIZED_ROLES:user_roles}
+    rs-config-prefix: ${ROBERT_SERVER_CONFIG_PREFIX:config.robert-server.robert.server}
+    rb-config-prefix: ${ROBERT_BATCH_CONFIG_PREFIX:config.robert-batch.robert.batch}
+
+# Keycloak configuration
+# - can be disabled on developpers environnement
+# - ssl-required for external connexions
+# - based on bearer token in authentication header
+keycloak:
+  enabled: ${ROBERT_ADMIN_KEYCLOAK_ENABLED:false}
+  auth-server-url: ${KEYCLOAK_AUTH_URL:http://localhost:8180/auth}
+  realm: ${ROBERT_ADMIN_KEYCLOAK_REALM:keycloak_realm}
+  ssl-required: external
+  resource: ${ROBERT_ADMIN_KEYCLOAK_CLIENT:keycloak_client}
+  public-client: true
+  credentials:    secret: ${ROBERT_ADMIN_KEYCLOAK_CLIENT_SECRET:client_secret}
