@@ -15,6 +15,14 @@ public class PropertyLoader {
     @Value("${robert.crypto.server.port}")
     private String cryptoServerPort;
 
+    /** @return the verification URL for the captcha strict service */
+    @Value("${captcha.strict.verify.url}")
+    private String captchaStrictVerificationUrl;
+
+    /** @return the successfull code from the verification by the captcha strict service */
+    @Value("${captcha.strict.success.code}")
+    private String captchaStrictSuccessCode;
+
     /**
      * 
      * @return the verification URL for the captcha
@@ -57,4 +65,5 @@ public class PropertyLoader {
 
     @Value("${robert.server.captcha-challenge-timestamp-tolerance}")
     private Integer captchaChallengeTimestampTolerance;
+
 }

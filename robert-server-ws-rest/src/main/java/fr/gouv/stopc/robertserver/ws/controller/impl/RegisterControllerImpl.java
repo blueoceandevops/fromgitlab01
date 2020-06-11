@@ -1,6 +1,5 @@
 package fr.gouv.stopc.robertserver.ws.controller.impl;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -8,16 +7,18 @@ import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
-import fr.gouv.stopc.robert.crypto.grpc.server.messaging.*;
 import org.bson.internal.Base64;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import com.google.protobuf.ByteString;
 
 import fr.gouv.stopc.robert.crypto.grpc.server.client.service.ICryptoServerGrpcClient;
+import fr.gouv.stopc.robert.crypto.grpc.server.messaging.CreateRegistrationRequest;
+import fr.gouv.stopc.robert.crypto.grpc.server.messaging.CreateRegistrationResponse;
 import fr.gouv.stopc.robert.server.common.service.IServerConfigurationService;
 import fr.gouv.stopc.robert.server.common.utils.TimeUtils;
 import fr.gouv.stopc.robertserver.database.model.ApplicationConfigurationModel;
@@ -32,7 +33,6 @@ import fr.gouv.stopc.robertserver.ws.service.CaptchaService;
 import fr.gouv.stopc.robertserver.ws.utils.MessageConstants;
 import fr.gouv.stopc.robertserver.ws.vo.RegisterVo;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.util.StringUtils;
 
 @Slf4j
 @Service
@@ -47,7 +47,7 @@ public class RegisterControllerImpl implements IRegisterController {
     private final CaptchaService captchaService;
 
     private  final ICryptoServerGrpcClient cryptoServerClient;
- 
+
     @Inject
     public RegisterControllerImpl(final IRegistrationService registrationService,
             final IServerConfigurationService serverConfigurationService,
