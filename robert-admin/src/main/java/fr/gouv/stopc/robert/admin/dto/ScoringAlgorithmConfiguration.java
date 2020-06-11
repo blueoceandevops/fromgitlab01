@@ -3,6 +3,8 @@ package fr.gouv.stopc.robert.admin.dto;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 import fr.gouv.stopc.robert.admin.vo.SignalCalibration;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -30,6 +32,7 @@ public class ScoringAlgorithmConfiguration {
 	 * 
 	 * @since 0.0.1-SNAPSHOT
 	 */
+	@JsonSerialize(converter = CustomSignalCalibrationConverter.class)
 	private List<SignalCalibration> signalCalibrationPerModel = new ArrayList<>();
 
 	/**
@@ -136,5 +139,13 @@ public class ScoringAlgorithmConfiguration {
 	 * @since 0.0.1-SNAPSHOT
 	 */
 	private String flagMode;
-	
+
+	private Float riskThreshold;
+
+	private Integer rssi1m;
+
+	private Integer mu0;
+
+	private Float r0;
+
 }

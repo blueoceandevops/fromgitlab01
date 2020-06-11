@@ -1,18 +1,19 @@
+management:  endpoint:    health:      enabled: true  endpoints:    web:      exposure:        include:        - health
 # Web server configuration
 server:
   port: ${ROBERT_ADMIN_PORT:8888}
-
 # Application name used by consul
 spring:
   application:
-    name: robert-admin
-
+    name: robert-admin  cloud:    consul:      host: localhost
+      port: 8500      config:        enabled: true
+      discovery:        instance-id: ${spring.application.name}:${random.value}        fail-fast: false  autoconfigure:    exclude:    - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration    
 # Robert admin configuration
 robert:
   admin:
     authorized-roles: ${ROBERT_ADMIN_AUTHORIZED_ROLES:user_roles}
-    rs-config-prefix: ${ROBERT_SERVER_CONFIG_PREFIX:config.robert-server.robert.server}
-    rb-config-prefix: ${ROBERT_BATCH_CONFIG_PREFIX:config.robert-batch.robert.batch}
+    rs-config-prefix: ${ROBERT_SERVER_CONFIG_PREFIX:config/robert-server/robert/server/}
+    rb-config-prefix: ${ROBERT_BATCH_CONFIG_PREFIX:config/robert-batch/robert/batch/}
 
 # Keycloak configuration
 # - can be disabled on developpers environnement

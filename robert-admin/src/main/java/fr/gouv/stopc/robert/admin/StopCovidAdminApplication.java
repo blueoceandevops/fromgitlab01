@@ -4,10 +4,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class RobertAdminApplication {
+public class StopCovidAdminApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(RobertAdminApplication.class, args);
+		SpringApplication.run(StopCovidAdminApplication.class, args);
 	}
 
 }

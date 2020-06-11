@@ -28,7 +28,7 @@ import fr.gouv.stopc.robert.admin.vo.FunctionalConfiguration;
 @RestController
 @RequestMapping("/api/v1/config")
 @CrossOrigin
-public class RobertConfigurationController {
+public class StopCovidConfigurationController {
 
 	/**
 	 * The service for configuration manipulations
@@ -43,7 +43,7 @@ public class RobertConfigurationController {
 	 * @param service the <code>IRobertConfigurationService</code> bean to use
 	 * @since 0.0.1-SNAPSHOT
 	 */
-	public RobertConfigurationController(IStopCovidConfigurationService service) {
+	public StopCovidConfigurationController(IStopCovidConfigurationService service) {
 		this.service = service;
 	}
 

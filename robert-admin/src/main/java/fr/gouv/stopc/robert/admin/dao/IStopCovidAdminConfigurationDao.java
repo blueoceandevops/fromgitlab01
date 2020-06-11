@@ -5,7 +5,7 @@ import java.util.List;
 import fr.gouv.stopc.robert.admin.vo.ConfigurationHistoryEntry;
 import fr.gouv.stopc.robert.admin.vo.FunctionalConfiguration;
 
-public interface IRobertAdminConfigurationDao {
+public interface IStopCovidAdminConfigurationDao {
 	
 	/**
 	 * Function retrieving the configuration history entries for a given spring

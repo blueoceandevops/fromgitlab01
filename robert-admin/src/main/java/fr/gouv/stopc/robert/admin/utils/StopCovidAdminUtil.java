@@ -16,7 +16,7 @@ import fr.gouv.stopc.robert.admin.vo.FunctionalConfiguration;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class RobertAdminUtil {
+public class StopCovidAdminUtil {
 
 	/**
 	 * 

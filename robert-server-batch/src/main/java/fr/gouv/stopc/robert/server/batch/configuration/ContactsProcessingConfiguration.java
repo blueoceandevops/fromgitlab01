@@ -1,6 +1,7 @@
 package fr.gouv.stopc.robert.server.batch.configuration;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.inject.Inject;
@@ -11,14 +12,20 @@ import org.springframework.batch.core.configuration.annotation.EnableBatchProces
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.item.ItemReader;
+import org.springframework.batch.item.NonTransientResourceException;
+import org.springframework.batch.item.ParseException;
+import org.springframework.batch.item.UnexpectedInputException;
 import org.springframework.batch.item.data.MongoItemReader;
 import org.springframework.batch.item.data.MongoItemWriter;
 import org.springframework.batch.item.data.builder.MongoItemWriterBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Query;
 
 import fr.gouv.stopc.robert.crypto.grpc.server.client.service.ICryptoServerGrpcClient;
 import fr.gouv.stopc.robert.server.batch.processor.ContactProcessor;
@@ -32,7 +39,7 @@ import fr.gouv.stopc.robertserver.database.service.IRegistrationService;
 @Configuration
 @EnableBatchProcessing
 public class ContactsProcessingConfiguration {
-	
+
 	private final IServerConfigurationService serverConfigurationService;
 
 	private final IRegistrationService registrationService;
@@ -49,19 +56,16 @@ public class ContactsProcessingConfiguration {
 
 	@Inject
 	public ContactsProcessingConfiguration(final IServerConfigurationService serverConfigurationService,
-										   final IRegistrationService registrationService,
-										   final ContactService contactService,
-										   final ICryptoServerGrpcClient cryptoServerClient,
-										   final ScoringStrategyService scoringStrategyService,
-										   final PropertyLoader propertyLoader
-			) {
-		
+			final IRegistrationService registrationService, final ContactService contactService,
+			final ICryptoServerGrpcClient cryptoServerClient, final ScoringStrategyService scoringStrategyService,
+			final PropertyLoader propertyLoader) {
+
 		this.serverConfigurationService = serverConfigurationService;
 		this.registrationService = registrationService;
 		this.contactService = contactService;
 		this.cryptoServerClient = cryptoServerClient;
 		this.scoringStrategyService = scoringStrategyService;
-		this.propertyLoader =  propertyLoader;
+		this.propertyLoader = propertyLoader;
 
 	}
 
@@ -77,12 +81,27 @@ public class ContactsProcessingConfiguration {
 				.processor(contactsProcessor()).writer(mongoItemWriter).build();
 	}
 
+	public class ContactItemReader implements ItemReader<List<Contact>> {
+
+		@Autowired
+		private MongoTemplate mongoTemplate;
+
+		@Override
+		public List<Contact> read() throws Exception {
+			Query readQuery = new Query();
+			readQuery.limit(10000);
+			return mongoTemplate.find(readQuery, Contact.class);
+		}
+
+	}
+
 	@Bean
-	public MongoItemReader<Contact> mongoItemReader(MongoTemplate mongoTemplate) {
+	public ItemReader<List<Contact>> mongoItemReader(MongoTemplate mongoTemplate) {
 		
 	    MongoItemReader<Contact> reader = new MongoItemReader<>();
-
-	    reader.setTemplate(mongoTemplate);
+	    Query toto = new Query();
+	    toto.set
+	    reader.setTemplate(mongoTemplate.find(query, entityClass));
 
 	    reader.setSort(new HashMap<String, Sort.Direction>() {{
 
@@ -107,13 +126,8 @@ public class ContactsProcessingConfiguration {
 
 	@Bean
 	public ItemProcessor<Contact, Contact> contactsProcessor() {
-		return new ContactProcessor(
-				this.serverConfigurationService,
-				this.registrationService,
-				this.contactService,
-				this.cryptoServerClient,
-				this.scoringStrategyService,
-				this.propertyLoader) {
+		return new ContactProcessor(this.serverConfigurationService, this.registrationService, this.contactService,
+				this.cryptoServerClient, this.scoringStrategyService, this.propertyLoader) {
 		};
 	}
 }

@@ -1,6 +1,7 @@
 package fr.gouv.stopc.robertserver.database.model;
 
 import javax.persistence.Id;
+import javax.persistence.OrderBy;
 import javax.validation.constraints.NotNull;
 
 import lombok.*;

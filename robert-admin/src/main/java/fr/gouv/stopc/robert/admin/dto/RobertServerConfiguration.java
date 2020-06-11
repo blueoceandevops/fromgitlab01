@@ -1,9 +1,8 @@
 package fr.gouv.stopc.robert.admin.dto;
 
-import fr.gouv.stopc.robert.admin.vo.App;
-import fr.gouv.stopc.robert.admin.vo.Ble;
-import lombok.Builder;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * 
@@ -11,10 +10,15 @@ import lombok.Data;
  *
  */
 @Data
-@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class RobertServerConfiguration {
 
-	private App mobileApp;
+	private Integer appAutonomy;
 
-	private Ble scoring;
+	private Integer maxSimultaneousRegister;
+
+	private MobileAppConfiguration app;
+
+	private ScoringAlgorithmConfiguration scoring;
 }

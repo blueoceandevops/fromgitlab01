@@ -19,13 +19,13 @@ public interface FunctionalConfigurationMapper {
 
 	FunctionalConfigurationMapper INSTANCE = Mappers.getMapper(FunctionalConfigurationMapper.class);
 
-	@Mapping(source = "", target = "")
+	@Mapping(source = "accountManagement.appAutonomy", target = "appAutonomy")
 	RobertServerConfiguration toRobertServerConfiguration(FunctionalConfiguration conf);
 	
-	@Mapping(source = "", target = "")
+	@Mapping(source = "tracing.ble.simultaneousContacts", target = "scoring.simultaneousContacts")
 	RobertBatchConfiguration toRobertBatchConfiguration(FunctionalConfiguration conf);
 	
-	@Mapping(source = "", target = "")
+	@Mapping(source = "robertServerConfiguration.appAutonomy", target = "account.appAutonomy")
 	FunctionalConfiguration toFunctionalConfiguration(RobertServerConfiguration rsConf, RobertBatchConfiguration rbConf);
 	
 }

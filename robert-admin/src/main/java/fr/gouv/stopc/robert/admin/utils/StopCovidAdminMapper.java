@@ -3,6 +3,7 @@ package fr.gouv.stopc.robert.admin.utils;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -10,10 +11,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.stereotype.Component;
 
-import com.ecwid.consul.v1.kv.model.GetValue;
+import com.ecwid.consul.v1.kv.model.GetBinaryValue;
+import com.fasterxml.jackson.dataformat.javaprop.JavaPropsMapper;
 
 import fr.gouv.stopc.robert.admin.dto.RobertBatchConfiguration;
 import fr.gouv.stopc.robert.admin.dto.RobertServerConfiguration;
@@ -28,7 +31,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 @RefreshScope
-public class RobertAdminMapper {
+public class StopCovidAdminMapper {
+
+	private JavaPropsMapper propertiesMapper = new JavaPropsMapper();
 
 	/**
 	 * 
@@ -36,16 +41,28 @@ public class RobertAdminMapper {
 	 * @param rbConsulValues
 	 * @return
 	 */
-	public FunctionalConfiguration toFunctionalConfiguration(List<GetValue> rsConsulValues,
-			List<GetValue> rbConsulValues, String rsPrefix, String rbPrefix) {
-		Properties rsConsulProps = new Properties();
-		rsConsulValues.stream().forEach(val -> rsConsulProps.put(val.getKey(), val.getKey()));
-		Properties rbConsulProps = new Properties();
-		rbConsulValues.stream().forEach(val -> rbConsulProps.put(val.getKey(), val.getKey()));
-
-		RobertServerConfiguration rsConf = toObject(RobertServerConfiguration.class, rsConsulProps, rsPrefix);
-		RobertBatchConfiguration rbConf = toObject(RobertBatchConfiguration.class, rbConsulProps, rbPrefix);
-		return FunctionalConfigurationMapper.INSTANCE.toFunctionalConfiguration(rsConf, rbConf);
+	public FunctionalConfiguration toFunctionalConfiguration(List<GetBinaryValue> rsConsulValues,
+			List<GetBinaryValue> rbConsulValues, String rsPrefix, String rbPrefix) {
+		try {
+			// Creation of the corresponding java Properties to use them with jackons
+			// JavaPropsMapper
+			Properties rsConsulProps = new Properties();
+			// Remove the prefix and kebab to camel casify keys
+			rsConsulValues.stream().forEach(val -> rsConsulProps
+					.put(StopCovidAdminUtil.kebabToCamelCase(StringUtils.remove(val.getKey(), rsPrefix)).replace("/", "."), new String(val.getValue())));
+			Properties rbConsulProps = new Properties();
+			rbConsulValues.stream().forEach(val -> rbConsulProps
+					.put(StopCovidAdminUtil.kebabToCamelCase(StringUtils.remove(val.getKey(), rbPrefix)).replace("/", "."), new String(val.getValue())));
+			// Convert java Properties to object
+			RobertServerConfiguration rsConf = propertiesMapper.readPropertiesAs(rsConsulProps,
+					RobertServerConfiguration.class);
+			RobertBatchConfiguration rbConf = propertiesMapper.readPropertiesAs(rbConsulProps,
+					RobertBatchConfiguration.class);
+			return FunctionalConfigurationMapper.INSTANCE.toFunctionalConfiguration(rsConf, rbConf);
+		} catch (IOException e) {
+			log.error("Error converting Consul configurations : {}", e.getMessage());
+			return null;
+		}
 	}
 
 	/**
@@ -66,12 +83,13 @@ public class RobertAdminMapper {
 				try {
 					if (x.getPropertyType().getPackage().getName().equals("fr.gouv.stopc.robert.admin.dto")) {
 						// If the current property is a DTO of Robert Admin then convert into kv with
-						// the name of property added to the prefix
-						rsKv.putAll(toKeyValue(x.getReadMethod().invoke(toConvert), prefix + "." + x.getName()));
+						// the name of property added to the prefix. Consul property path separator is
+						// '/' and not '.'
+						rsKv.putAll(toKeyValue(x.getReadMethod().invoke(toConvert), prefix + "/" + x.getName()));
 					} else {
 						// If not a DTO from Robert Admin then kebab-casify the name & stringify the
 						// value
-						rsKv.put(prefix + RobertAdminUtil.camelToKebabCase(x.getName()),
+						rsKv.put(prefix + StopCovidAdminUtil.camelToKebabCase(x.getName()),
 								x.getReadMethod().invoke(toConvert).toString());
 					}
 				} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
@@ -84,21 +102,4 @@ public class RobertAdminMapper {
 		return rsKv;
 	}
 
-	/**
-	 * 
-	 * @param consulValues
-	 * @return
-	 */
-	private <T extends Object> T toObject(Class<T> objectClass, Properties consulValues, String prefix) {
-		T result;
-		try {
-			result = objectClass.newInstance();
-			PropertyDescriptor[] propDescArr = Introspector.getBeanInfo(objectClass, Object.class)
-					.getPropertyDescriptors();
-		} catch (InstantiationException | IllegalAccessException | IntrospectionException e) {
-			log.error("Error converting Consul values : {}", e.getMessage());
-			result = null;
-		}
-		return result;
-	}
 }
