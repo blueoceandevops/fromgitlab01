@@ -1,5 +1,6 @@
 package test.fr.gouv.stopc.robertserver.ws;
 
+import static fr.gouv.stopc.robertserver.ws.config.Config.API_V1;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -11,12 +12,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Optional;
 
 import javax.inject.Inject;
 
-import fr.gouv.stopc.robert.crypto.grpc.server.messaging.CreateRegistrationResponse;
 import org.bson.internal.Base64;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,6 +41,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import com.google.protobuf.ByteString;
 
 import fr.gouv.stopc.robert.crypto.grpc.server.client.service.ICryptoServerGrpcClient;
+import fr.gouv.stopc.robert.crypto.grpc.server.messaging.CreateRegistrationResponse;
 import fr.gouv.stopc.robert.server.common.service.IServerConfigurationService;
 import fr.gouv.stopc.robert.server.common.utils.TimeUtils;
 import fr.gouv.stopc.robert.server.crypto.service.CryptoService;
@@ -62,7 +62,7 @@ import lombok.extern.slf4j.Slf4j;
 @TestPropertySource("classpath:application.properties")
 @Slf4j
 public class RegisterControllerWsRestTest {
-	@Value("${controller.path.prefix}")
+	@Value("${controller.path.prefix}" + API_V1)
 	private String pathPrefix;
 
 	@Inject

@@ -1,5 +1,6 @@
 package test.fr.gouv.stopc.robertserver.ws;
 
+import static fr.gouv.stopc.robertserver.ws.config.Config.API_V2;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -61,7 +62,7 @@ import lombok.extern.slf4j.Slf4j;
 @TestPropertySource("classpath:application.properties")
 @Slf4j
 public class RegisterStrictControllerWsRestTest {
-	@Value("${controller.path.prefix}/v2")
+	@Value("${controller.path.prefix}" + API_V2)
 	private String pathPrefix;
 
 	@Inject
